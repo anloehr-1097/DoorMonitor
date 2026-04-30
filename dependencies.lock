@@ -1,0 +1,75 @@
+dependencies:
+  espressif/cmake_utilities:
+    component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.1'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.5.3
+  espressif/i2c_bus:
+    component_hash: 4e990dc11734316186b489b362c61d41f23f79d58bc169795cec215e528cba14
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: '*'
+    - name: idf
+      require: private
+      version: '>=4.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.5.0
+  espressif/sensor_hub:
+    component_hash: b3e72f3e2d10e165b972b17fff889f294b1a685769efacf73ec8f1e92152d1d5
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.*
+    - name: espressif/i2c_bus
+      registry_url: https://components.espressif.com
+      require: public
+      version: 1.*
+    - name: idf
+      require: private
+      version: '>=4.4'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.1.4
+  espressif/sht3x:
+    component_hash: c9bcb43e9d771dbd65e5855b12424d0a386b07d9aba98b2ed57890985013f4e5
+    dependencies:
+    - name: espressif/cmake_utilities
+      registry_url: https://components.espressif.com
+      require: private
+      version: 0.*
+    - name: espressif/i2c_bus
+      registry_url: https://components.espressif.com
+      require: public
+      version: '*'
+    - name: idf
+      require: private
+      version: '>=4.4'
+    - name: espressif/sensor_hub
+      registry_url: https://components.espressif.com
+      require: public
+      version: '*'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.2.0
+  idf:
+    source:
+      type: idf
+    version: 6.1.0
+direct_dependencies:
+- espressif/sht3x
+- idf
+manifest_hash: 93c6b8c2836c4cc20cae0a2ed726cb0da490259407cd641e61b6c6ead10d9f50
+target: esp32s3
+version: 2.0.0

@@ -1,0 +1,7 @@
+build
+managed_components/**/*
+.cache
+pytest_hello_world.py
+*.old
+*.ci
+host_tests/build*
