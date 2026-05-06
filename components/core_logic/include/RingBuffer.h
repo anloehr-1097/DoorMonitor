@@ -3,8 +3,16 @@
 
 #include <array>
 #include <optional>
+#include <type_traits>
 
-template <typename T, unsigned int N> class RingBuffer {
+template <class T>
+concept IsTriviallyCopyable = std::is_trivially_copyable<T>::value;
+
+// A simple ring buffer implementation that can hold up to N elements of type T.
+// The buffer is designed to be used in a single producer, single consumer
+// scenario. Elements of the buffer should be trivially copyable to ensure that
+// the push and pop operations are efficient.
+template <IsTriviallyCopyable T, unsigned int N> class RingBuffer {
   std::array<T, N> buffer;
   bool full = false;
   unsigned int read_pos = 0;

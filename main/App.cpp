@@ -5,6 +5,7 @@
  */
 
 #include "SharedRingContext.h"
+#include "SignalProcessor.h"
 #include "driver/gpio.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
@@ -12,7 +13,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "hal/gpio_types.h"
-#include "include/InfraredTask.h"
+#include "include/GPIOTask.h"
 #include "sdkconfig.h"
 #include "soc/gpio_num.h"
 #include <inttypes.h>
@@ -46,44 +47,21 @@ extern "C" void app_main(void) {
 
   printf("Minimum free heap size: %" PRIu32 " bytes\n",
          esp_get_minimum_free_heap_size());
-  //
-  // for (int i = 10; i >= 0; i--) {
-  //     printf("Restarting in %d seconds...\n", i);
-  //     vTaskDelay(1000 / portTICK_PERIOD_MS);
-  // }
-  // printf("Restarting now.\n");
-  // fflush(stdout);
-  //
-  //
-  // esp_restart();
 
-  static SharedRingCtxt<int, 100> shared_ring_ctxt{};
-  esp_err_t res = gpio_reset_pin(GPIO_NUM_39);
+  static SharedRingCtxt<int, 100> reed_shared_ring_ctxt{};
+  static SharedRingCtxt<int, 100> infrared_shared_ring_ctxt{};
 
-  if (res != ESP_OK) {
-    printf("Failed to reset GPIO32, error code: %d\n", res);
-    return;
-  }
+  GPIOTask reed_task(GPIO_NUM_39, reed_shared_ring_ctxt);
+  reed_task.register_task("reed_task", 2048, 5);
 
-  esp_err_t pures = gpio_set_pull_mode(GPIO_NUM_39, GPIO_PULLUP_ONLY);
+  GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
+  infrared_task.register_task("infrared_task", 2048, 5);
 
-  if (pures != ESP_OK) {
-    printf("Failed to set GPIO39 pull mode, error code: %d\n", pures);
-    return;
-  }
-  esp_err_t setd = gpio_set_direction(GPIO_NUM_39, GPIO_MODE_INPUT);
-  if (setd != ESP_OK) {
-    printf("Failed to set GPIO39 direction, error code: %d\n", setd);
-    return;
-  }
-
-  GPIOTask gpio_task(GPIO_NUM_21, shared_ring_ctxt);
-  gpio_task.register_task("gpio_task", 2048, 5);
-
-  RingBuffer<float, 20> signal_buffer;
+  SignalProcessor signal_processor(reed_shared_ring_ctxt,
+                                   infrared_shared_ring_ctxt);
+  signal_processor.register_task("signal_processor", 4096, 10);
 
   while (1) {
-    printf("GPIO39 state: %d\n", gpio_get_level(GPIO_NUM_39));
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }

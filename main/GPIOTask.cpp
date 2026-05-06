@@ -1,8 +1,8 @@
-#include "include/InfraredTask.h"
 #include "SharedRingContext.h"
 #include "driver/gpio.h"
 #include "esp_err.h"
 #include "hal/gpio_types.h"
+#include "include/GPIOTask.h"
 #include <cstdio>
 
 GPIOTask::GPIOTask(const gpio_num_t gpio_num, ISharedRingCtxt<int> &ctxt)
