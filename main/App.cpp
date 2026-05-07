@@ -5,6 +5,7 @@
  */
 
 #include "SharedRingContext.h"
+#include "SignalEvaluator.h"
 #include "SignalProcessor.h"
 #include "driver/gpio.h"
 #include "esp_chip_info.h"
@@ -57,8 +58,11 @@ extern "C" void app_main(void) {
   GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
   infrared_task.register_task("infrared_task", 2048, 5);
 
+  IsEqualToZeroEvaluator<int> is_zero_evaluator;
   SignalProcessor signal_processor(reed_shared_ring_ctxt,
-                                   infrared_shared_ring_ctxt);
+                                   infrared_shared_ring_ctxt, is_zero_evaluator,
+                                   is_zero_evaluator);
+
   signal_processor.register_task("signal_processor", 4096, 10);
 
   while (1) {

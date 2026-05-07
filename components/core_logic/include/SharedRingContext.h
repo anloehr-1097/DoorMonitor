@@ -10,6 +10,7 @@ template <typename T> struct ISharedRingCtxt {
   virtual ~ISharedRingCtxt() = default;
   virtual void push(const T &item) = 0;
   virtual std::optional<T> pop() = 0;
+  virtual bool empty() = 0;
 };
 
 // Encapsulate a RingBuffer and a binary semaphore to control
@@ -32,6 +33,13 @@ struct SharedRingCtxt : public ISharedRingCtxt<T> {
     std::optional<T> elem = buffer.pop();
     access_sem.release();
     return elem;
+  }
+
+  bool empty() override {
+    access_sem.acquire();
+    bool is_empty = buffer.empty();
+    access_sem.release();
+    return is_empty;
   }
 };
 
