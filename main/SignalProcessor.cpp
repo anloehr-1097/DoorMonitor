@@ -23,6 +23,7 @@ void SignalProcessor::task() {
     if (q1.empty() || q2.empty()) {
       // Add a delay to prevent busy waiting
       vTaskDelay(100 / portTICK_PERIOD_MS);
+      continue;
     }
 
     // Process signals from q1 and q2

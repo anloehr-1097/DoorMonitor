@@ -1,0 +1,15 @@
+#+TITLE: Roadmap
+#+AUTHOR: Andreas Loehr
+#+EMAIL: andreas.loehr97@gmail.com
+#+DATE:<2026-05-07 Thu> 
+
+
+* Queue Synchronization
+
+In the scenario where two or more queues are used in a consumer which processes the signals from those queues, a more robust approach to synchronization than in [[../../../main/SignalProcessor.cpp][SignalProcessor.cpp]]
+is desirable.
+
+The issue with the synchronization implemented in the above-mentioned arises when a write to one of the queues fails while succeeding with in other queue. In this case, when the consumer keeps consuming, at some point the values consumed will be one-off / out of sync.
+
+To handle this, we could introduce make the write to both of the queues "atomic" and if in need, roll it back or, even better, to avoid the necessity of a rollback, synchronizate the write operation at a barrier which can only be crossed, if the write operations to both queues are likely to succeed.
+

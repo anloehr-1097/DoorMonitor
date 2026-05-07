@@ -5,3 +5,5 @@ pytest_hello_world.py
 *.old
 *.ci
 host_tests/build*
+*.~undo-tree~
+*~
