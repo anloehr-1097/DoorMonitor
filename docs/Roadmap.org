@@ -1,3 +1,12 @@
 
 * vTaskDelayUntil
 make the sensor reading times more predictable by using vTaskDelayUntil instead of vTaskDelay
+
+
+* Integration of the INMP441 audio module
+
+- Read general info regarding I2S as cited in [[file:I2S.org][this doc]]
+- Read the respective source in the [[file:I2S.org][this doc]] 
+- understand timings, components of the protocol and audio module
+
+

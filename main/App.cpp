@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
+#include "NoiseDetectionTask.h"
 #include "SharedRingContext.h"
 #include "SignalEvaluator.h"
 #include "SignalProcessor.h"
@@ -64,6 +65,17 @@ extern "C" void app_main(void) {
                                    is_zero_evaluator);
 
   signal_processor.register_task("signal_processor", 4096, 10);
+
+  NoiseDetectionTask noise_detection_task;
+  NoiseDetectionI2SConfig noise_config = {
+      .sample_rate = 16000,
+      .SD_pin = GPIO_NUM_16,
+      .BCKL_pin = GPIO_NUM_17,
+      .WS_pin = GPIO_NUM_18,
+      .bits_per_sample = I2S_DATA_BIT_WIDTH_24BIT,
+  };
+  noise_detection_task.setup(noise_config, I2S_NUM_0);
+  noise_detection_task.register_task("noise_detection_task", 4096, 10);
 
   while (1) {
     vTaskDelay(100 / portTICK_PERIOD_MS);

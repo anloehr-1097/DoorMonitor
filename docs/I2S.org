@@ -1,0 +1,53 @@
+
+* General
+
+[[https://www.nxp.com/docs/en/user-manual/UM11732.pdf][This general document for the I2S spec]]
+
+ -------       ------
+| Master | --- | Slave |
+ -------       ------
+
+
+SCK: Serial Clock - clock line, controls timing of data transmission
+WS: Word Select - indicates which channel is being transmitted (left or right in stereo audio) 
+SD: Serial Data - data line
+
+
+- synchronous
+- various possibilities of who controls the single lines in the bus 
+- alternatively central "system" controller providing external clock
+
+
+- transmisssion of data is synchronized to the clock signal
+
+- can handle different word lenghts on receiver, transmitter (and system) sides => data encoding is two complement with most significant bit first (allows for truncation)
+
+- data synchronized with either trailing HIGH-to-LOW or leading LOW-to-HIGH edge of clock signal
+  
+- word select line changes ones period before the MSB is transmitted
+
+#+CAPTION: basic interface timing
+[[file:~/Pictures/2026-05-13-074528_hyprshot.png]]
+
+
+* Concrete Audio Module used
+
+source: [[https://www.farnell.com/datasheets/1824785.pdf][This document on the INMP441 mic]], until page 15
+
+24bit I2S interface
+
+
+mic takes 2^{18} SCK clock cycles to power up -> delay the setup task
+
+** TODO understand the reference logic refererring to microphone sensitivity
+
+
+* ESP 32 spec 
+
+[[https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/i2s.html][ESP32-specification]]
+
+
+
+* Project
+*standard* or PDM mode?
+rx (read mode)
