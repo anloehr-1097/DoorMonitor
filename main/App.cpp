@@ -15,6 +15,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "hal/gpio_types.h"
+#include "hal/i2s_types.h"
 #include "include/GPIOTask.h"
 #include "sdkconfig.h"
 #include "soc/gpio_num.h"
@@ -72,7 +73,7 @@ extern "C" void app_main(void) {
       .SD_pin = GPIO_NUM_16,
       .BCKL_pin = GPIO_NUM_17,
       .WS_pin = GPIO_NUM_18,
-      .bits_per_sample = I2S_DATA_BIT_WIDTH_24BIT,
+      .bits_per_sample = I2S_DATA_BIT_WIDTH_32BIT,
   };
   noise_detection_task.setup(noise_config, I2S_NUM_0);
   noise_detection_task.register_task("noise_detection_task", 4096, 10);

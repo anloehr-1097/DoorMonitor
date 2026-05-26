@@ -57,7 +57,7 @@ void NoiseDetectionTask::task() {
               << "Error code:  " << err << std::endl;
     std::cout << "First 100 samples: ";
     for (int i = 0; i < 100 && i < bytes_read / sizeof(int); i++) {
-      std::cout << (data_buffer[i] >> 8) << " ";
+      std::cout << std::hex << data_buffer[i] << " ";
     }
     std::cout << std::endl;
 
