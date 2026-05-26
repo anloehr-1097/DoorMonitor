@@ -1,8 +1,10 @@
 #include "NoiseDetectionTask.h"
+#include "driver/gpio.h"
 #include "driver/i2s_common.h"
 #include "driver/i2s_std.h"
 #include "driver/i2s_types.h"
 #include "esp_err.h"
+#include "hal/gpio_types.h"
 #include "hal/i2s_types.h"
 #include "include/utils.h"
 #include "portmacro.h"
@@ -37,6 +39,7 @@ void NoiseDetectionTask::setup(const NoiseDetectionI2SConfig &config,
       I2S_MCLK_MULTIPLE_384; // need for 24 bit compatibility with the mic we
                              // use
 
+  gpio_set_pull_mode(config.SD_pin, GPIO_PULLDOWN_ONLY);
   esp_err_t err = i2s_channel_init_std_mode(read_chan, &comm_config);
   handle_error(err);
   // enable channel -> ready to read data
@@ -57,7 +60,7 @@ void NoiseDetectionTask::task() {
               << "Error code:  " << err << std::endl;
     std::cout << "First 100 samples: ";
     for (int i = 0; i < 100 && i < bytes_read / sizeof(int); i++) {
-      std::cout << std::hex << data_buffer[i] << " ";
+      std::cout << std::hex << (data_buffer[i] >> 8) << " ";
     }
     std::cout << std::endl;
 

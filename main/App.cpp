@@ -51,22 +51,6 @@ extern "C" void app_main(void) {
   printf("Minimum free heap size: %" PRIu32 " bytes\n",
          esp_get_minimum_free_heap_size());
 
-  static SharedRingCtxt<int, 100> reed_shared_ring_ctxt{};
-  static SharedRingCtxt<int, 100> infrared_shared_ring_ctxt{};
-
-  GPIOTask reed_task(GPIO_NUM_39, reed_shared_ring_ctxt);
-  reed_task.register_task("reed_task", 2048, 5);
-
-  GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
-  infrared_task.register_task("infrared_task", 2048, 5);
-
-  IsEqualToZeroEvaluator<int> is_zero_evaluator;
-  SignalProcessor signal_processor(reed_shared_ring_ctxt,
-                                   infrared_shared_ring_ctxt, is_zero_evaluator,
-                                   is_zero_evaluator);
-
-  signal_processor.register_task("signal_processor", 4096, 10);
-
   NoiseDetectionTask noise_detection_task;
   NoiseDetectionI2SConfig noise_config = {
       .sample_rate = 16000,
