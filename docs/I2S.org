@@ -42,6 +42,13 @@ mic takes 2^{18} SCK clock cycles to power up -> delay the setup task
 ** TODO understand the reference logic refererring to microphone sensitivity
 
 
+* General information on mems microphones
+
+https://blog.mbedded.ninja/misc/microphones/AN-1112-Analog-Devices-App-Note-Microphone-Specifications-Explained.pdf
+
+explains the DBFS and microphone sensitivity terminology
+
+
 * ESP 32 spec 
 
 [[https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/i2s.html][ESP32-specification]]
@@ -51,3 +58,8 @@ mic takes 2^{18} SCK clock cycles to power up -> delay the setup task
 * Project
 *standard* or PDM mode?
 rx (read mode)
+
+
+
+
+

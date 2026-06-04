@@ -69,7 +69,7 @@ extern "C" void app_main(void) {
 
   NoiseDetectionTask noise_detection_task;
   NoiseDetectionI2SConfig noise_config = {
-      .sample_rate = 16000,
+      .sample_rate = 16000, // 16kHz sampling rate
       .SD_pin = GPIO_NUM_16,
       .BCKL_pin = GPIO_NUM_17,
       .WS_pin = GPIO_NUM_18,
