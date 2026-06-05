@@ -8,19 +8,26 @@
 #include "SharedRingContext.h"
 #include "SignalEvaluator.h"
 #include "SignalProcessor.h"
+#include "WifiConnectTask.h"
 #include "driver/gpio.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "hal/gpio_types.h"
 #include "hal/i2s_types.h"
 #include "include/GPIOTask.h"
+#include "include/helpers.h"
+#include "nvs_flash.h"
 #include "sdkconfig.h"
+#include "secrets.h"
 #include "soc/gpio_num.h"
 #include <inttypes.h>
 #include <stdio.h>
+
+static EventGroupHandle_t wifi_event_group;
 
 extern "C" void app_main(void) {
   /* Print chip information */
@@ -51,21 +58,21 @@ extern "C" void app_main(void) {
   printf("Minimum free heap size: %" PRIu32 " bytes\n",
          esp_get_minimum_free_heap_size());
 
-  static SharedRingCtxt<int, 100> reed_shared_ring_ctxt{};
-  static SharedRingCtxt<int, 100> infrared_shared_ring_ctxt{};
-
-  GPIOTask reed_task(GPIO_NUM_39, reed_shared_ring_ctxt);
-  reed_task.register_task("reed_task", 2048, 5);
-
-  GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
-  infrared_task.register_task("infrared_task", 2048, 5);
-
-  IsEqualToZeroEvaluator<int> is_zero_evaluator;
-  SignalProcessor signal_processor(reed_shared_ring_ctxt,
-                                   infrared_shared_ring_ctxt, is_zero_evaluator,
-                                   is_zero_evaluator);
-
-  signal_processor.register_task("signal_processor", 4096, 10);
+  //   static SharedRingCtxt<int, 100> reed_shared_ring_ctxt{};
+  //   static SharedRingCtxt<int, 100> infrared_shared_ring_ctxt{};
+  //
+  //   GPIOTask reed_task(GPIO_NUM_39, reed_shared_ring_ctxt);
+  //   reed_task.register_task("reed_task", 2048, 5);
+  //
+  //   GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
+  //   infrared_task.register_task("infrared_task", 2048, 5);
+  //
+  //   IsEqualToZeroEvaluator<int> is_zero_evaluator;
+  //   SignalProcessor signal_processor(reed_shared_ring_ctxt,
+  //                                    infrared_shared_ring_ctxt,
+  //                                    is_zero_evaluator, is_zero_evaluator);
+  //
+  //   signal_processor.register_task("signal_processor", 4096, 10);
 
   NoiseDetectionTask noise_detection_task;
   NoiseDetectionI2SConfig noise_config = {
@@ -77,6 +84,17 @@ extern "C" void app_main(void) {
   };
   noise_detection_task.setup(noise_config, I2S_NUM_0);
   noise_detection_task.register_task("noise_detection_task", 4096, 10);
+
+  esp_err_t nvs_ret = nvs_flash_init();
+  if (nvs_ret == ESP_ERR_NVS_NO_FREE_PAGES || nvs_ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    nvs_ret = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK(nvs_ret);
+
+  wifi_event_group = xEventGroupCreate();
+  WifiConnectTask wifi_task(WIFI_SSID, WIFI_PASSWORD, wifi_event_group);
+  wifi_task.register_task("wifi_task", 4096, 11);
 
   while (1) {
     vTaskDelay(100 / portTICK_PERIOD_MS);

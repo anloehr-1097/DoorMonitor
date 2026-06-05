@@ -7,3 +7,4 @@ pytest_hello_world.py
 host_tests/build*
 *.~undo-tree~
 *~
+**/secrets.h
