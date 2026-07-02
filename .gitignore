@@ -8,3 +8,5 @@ host_tests/build*
 *.~undo-tree~
 *~
 **/secrets.h
+build.clang
+tools

@@ -930,65 +930,20 @@ CONFIG_ESPTOOLPY_MONITOR_BAUD=115200
 #
 # Partition Table
 #
-# default:
-CONFIG_PARTITION_TABLE_SINGLE_APP=y
-# default:
-# CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE is not set
-# default:
+# CONFIG_PARTITION_TABLE_SINGLE_APP is not set
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
 # CONFIG_PARTITION_TABLE_TWO_OTA is not set
-# default:
 # CONFIG_PARTITION_TABLE_TWO_OTA_LARGE is not set
-# default:
 # CONFIG_PARTITION_TABLE_CUSTOM is not set
 # default:
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 # default:
-CONFIG_PARTITION_TABLE_FILENAME="partitions_singleapp.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions_singleapp_large.csv"
 # default:
 CONFIG_PARTITION_TABLE_OFFSET=0x8000
 # default:
 CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
-
-#
-# Sensor Hub Options
-#
-
-#
-# Sensor Build Options
-#
-# default:
-CONFIG_SENSOR_INCLUDED_IMU=y
-# default:
-CONFIG_SENSOR_INCLUDED_HUMITURE=y
-# default:
-CONFIG_SENSOR_INCLUDED_LIGHT=y
-# end of Sensor Build Options
-
-#
-# Sensor Task Options
-#
-# default:
-CONFIG_SENSOR_TASK_PRIORITY_INHERIT=y
-# default:
-CONFIG_SENSOR_TASK_STACK_SIZE=4096
-# end of Sensor Task Options
-
-#
-# Sensor Event Loop Options
-#
-# default:
-CONFIG_SENSORS_EVENT_TASK_PRIORITY_INHERIT=y
-# default:
-CONFIG_SENSOR_EVENT_LOOP_AUTO=y
-# default:
-CONFIG_SENSORS_EVENT_QUEUE_SIZE=32
-# default:
-CONFIG_SENSORS_EVENT_STACK_SIZE=4096
-# default:
-# CONFIG_SENSOR_DEFAULT_HANDLER is not set
-# end of Sensor Event Loop Options
-# end of Sensor Hub Options
 
 #
 # Compiler options
@@ -1082,40 +1037,6 @@ CONFIG_COMPILER_CXX_GLIBCXX_CONSTEXPR_NO_CHANGE=y
 #
 
 #
-# Legacy Driver Configurations
-#
-
-#
-# Legacy TWAI Driver Configurations
-#
-# default:
-# CONFIG_TWAI_ISR_IN_IRAM_LEGACY is not set
-# default:
-# CONFIG_TWAI_SUPPRESS_DEPRECATE_WARN is not set
-# default:
-# CONFIG_TWAI_SKIP_LEGACY_CONFLICT_CHECK is not set
-# end of Legacy TWAI Driver Configurations
-
-#
-# Legacy I2C Driver Configurations
-#
-# default:
-# CONFIG_I2C_SUPPRESS_DEPRECATE_WARN is not set
-# default:
-# CONFIG_I2C_SKIP_LEGACY_CONFLICT_CHECK is not set
-# end of Legacy I2C Driver Configurations
-
-#
-# Legacy Touch Sensor Driver Configurations
-#
-# default:
-# CONFIG_TOUCH_SUPPRESS_DEPRECATE_WARN is not set
-# default:
-# CONFIG_TOUCH_SKIP_LEGACY_CONFLICT_CHECK is not set
-# end of Legacy Touch Sensor Driver Configurations
-# end of Legacy Driver Configurations
-
-#
 # eFuse Bit Manager
 #
 # default:
@@ -1125,6 +1046,33 @@ CONFIG_COMPILER_CXX_GLIBCXX_CONSTEXPR_NO_CHANGE=y
 # default:
 CONFIG_EFUSE_MAX_BLK_LEN=256
 # end of eFuse Bit Manager
+
+#
+# ESP-TLS
+#
+# default:
+CONFIG_ESP_TLS_USING_MBEDTLS=y
+# default:
+# CONFIG_ESP_TLS_CUSTOM_STACK is not set
+# default:
+# CONFIG_ESP_TLS_USE_SECURE_ELEMENT is not set
+# default:
+CONFIG_ESP_TLS_USE_DS_PERIPHERAL=y
+# default:
+# CONFIG_ESP_TLS_CLIENT_SESSION_TICKETS is not set
+# default:
+# CONFIG_ESP_TLS_SERVER_SESSION_TICKETS is not set
+# default:
+# CONFIG_ESP_TLS_SERVER_CERT_SELECT_HOOK is not set
+# default:
+# CONFIG_ESP_TLS_SERVER_MIN_AUTH_MODE_OPTIONAL is not set
+# default:
+# CONFIG_ESP_TLS_PSK_VERIFICATION is not set
+# default:
+# CONFIG_ESP_TLS_INSECURE is not set
+# default:
+CONFIG_ESP_TLS_DYN_BUF_STRATEGY_SUPPORTED=y
+# end of ESP-TLS
 
 #
 # Wireless Coexistence
@@ -1163,17 +1111,6 @@ CONFIG_GDMA_OBJ_DRAM_SAFE=y
 # default:
 # CONFIG_GPIO_CTRL_FUNC_IN_IRAM is not set
 # end of ESP-Driver:GPIO Configurations
-
-#
-# ESP-Driver:I2C Configurations
-#
-# default:
-# CONFIG_I2C_ISR_IRAM_SAFE is not set
-# default:
-# CONFIG_I2C_ENABLE_DEBUG_LOG is not set
-# default:
-CONFIG_I2C_MASTER_ISR_HANDLER_IN_IRAM=y
-# end of ESP-Driver:I2C Configurations
 
 #
 # ESP-Driver:I2S Configurations
@@ -1223,6 +1160,27 @@ CONFIG_ESP_EVENT_POST_FROM_ISR_SIZE=4
 # default:
 CONFIG_ESP_EVENT_POST_FROM_IRAM_ISR=y
 # end of Event Loop Library
+
+#
+# ESP HTTP client
+#
+# default:
+CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS=y
+# default:
+# CONFIG_ESP_HTTP_CLIENT_ENABLE_BASIC_AUTH is not set
+# default:
+# CONFIG_ESP_HTTP_CLIENT_ENABLE_DIGEST_AUTH is not set
+# default:
+# CONFIG_ESP_HTTP_CLIENT_ENABLE_CUSTOM_TRANSPORT is not set
+# default:
+# CONFIG_ESP_HTTP_CLIENT_ENABLE_GET_CONTENT_RANGE is not set
+# default:
+CONFIG_ESP_HTTP_CLIENT_EVENT_POST_TIMEOUT=2000
+# default:
+CONFIG_ESP_HTTP_CLIENT_PSA_CRYPTO_MIGRATE=y
+# default:
+# CONFIG_ESP_HTTP_CLIENT_SAVE_RESPONSE_HEADERS is not set
+# end of ESP HTTP client
 
 #
 # Hardware Settings
@@ -1670,8 +1628,7 @@ CONFIG_ESP_SYSTEM_MEMPROT_PMS_LOCK=y
 CONFIG_ESP_SYSTEM_EVENT_QUEUE_SIZE=32
 # default:
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=2304
-# default:
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=3584
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 # default:
 CONFIG_ESP_MAIN_TASK_AFFINITY_CPU0=y
 # default:
@@ -2776,7 +2733,7 @@ CONFIG_MBEDTLS_AES_HW_SMALL_DATA_LEN_OPTIM=y
 # default:
 # CONFIG_MBEDTLS_ATCA_HW_ECDSA_VERIFY is not set
 # default:
-# CONFIG_MBEDTLS_HARDWARE_RSA_DS_PERIPHERAL is not set
+CONFIG_MBEDTLS_HARDWARE_RSA_DS_PERIPHERAL=y
 # end of Hardware Acceleration
 
 #
@@ -2975,6 +2932,22 @@ CONFIG_SPI_FLASH_ENABLE_ENCRYPTED_READ_WRITE=y
 # end of SPI Flash driver
 
 #
+# TCP Transport
+#
+
+#
+# Websocket
+#
+# default:
+CONFIG_WS_TRANSPORT=y
+# default:
+CONFIG_WS_BUFFER_SIZE=1024
+# default:
+# CONFIG_WS_DYNAMIC_BUFFER is not set
+# end of Websocket
+# end of TCP Transport
+
+#
 # Virtual file system
 #
 # default:
@@ -3004,41 +2977,13 @@ CONFIG_VFS_INITIALIZE_DEV_NULL=y
 # end of Virtual file system
 
 #
-# CMake Utilities
+# ESP WebSocket client
 #
 # default:
-# CONFIG_CU_RELINKER_ENABLE is not set
+# CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER is not set
 # default:
-# CONFIG_CU_DIAGNOSTICS_COLOR_NEVER is not set
-# default:
-CONFIG_CU_DIAGNOSTICS_COLOR_ALWAYS=y
-# default:
-# CONFIG_CU_DIAGNOSTICS_COLOR_AUTO is not set
-# default:
-# CONFIG_CU_GCC_LTO_ENABLE is not set
-# default:
-# CONFIG_CU_GCC_STRING_1BYTE_ALIGN is not set
-# end of CMake Utilities
-
-#
-# Bus Options
-#
-
-#
-# I2C Bus Options
-#
-# default:
-CONFIG_I2C_BUS_DYNAMIC_CONFIG=y
-# default:
-CONFIG_I2C_MS_TO_WAIT=200
-# default:
-# CONFIG_I2C_BUS_BACKWARD_CONFIG is not set
-# default:
-# CONFIG_I2C_BUS_SUPPORT_SOFTWARE is not set
-# default:
-# CONFIG_I2C_BUS_REMOVE_NULL_MEM_ADDR is not set
-# end of I2C Bus Options
-# end of Bus Options
+# CONFIG_ESP_WS_CLIENT_SEPARATE_TX_LOCK is not set
+# end of ESP WebSocket client
 # end of Component config
 
 # default:
@@ -3153,7 +3098,7 @@ CONFIG_ESP_SYSTEM_MEMPROT_FEATURE=y
 CONFIG_ESP_SYSTEM_MEMPROT_FEATURE_LOCK=y
 CONFIG_SYSTEM_EVENT_QUEUE_SIZE=32
 CONFIG_SYSTEM_EVENT_TASK_STACK_SIZE=2304
-CONFIG_MAIN_TASK_STACK_SIZE=3584
+CONFIG_MAIN_TASK_STACK_SIZE=8192
 CONFIG_INT_WDT=y
 CONFIG_INT_WDT_TIMEOUT_MS=300
 CONFIG_INT_WDT_CHECK_CPU1=y
