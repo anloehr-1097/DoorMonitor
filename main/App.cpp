@@ -9,6 +9,7 @@
 #include "SignalEvaluator.h"
 #include "SignalProcessor.h"
 #include "WebsocketClient.h"
+#include "WebsocketParser.h"
 #include "WifiConnectTask.h"
 #include "driver/gpio.h"
 #include "esp_chip_info.h"
@@ -147,7 +148,13 @@ extern "C" void app_main(void) {
       break;
     }
   });
-  // ws_client.start();
+
+  auto WsParser{GenericWSParser<const char *>()};
+  ws_client.start();
+  auto parsed_v = WsParser.parse("Parsed value").value();
+
+  // TODO(al) need to wait for the socket to be connected
+  ws_client.send(parsed_v);
 
   while (1) {
     vTaskDelay(100 / portTICK_PERIOD_MS);
