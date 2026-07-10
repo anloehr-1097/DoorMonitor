@@ -1,0 +1,265 @@
+#+TITLE: C++20 Coroutines — Working Notes
+#+AUTHOR:
+#+DATE: 2026-07-10
+#+OPTIONS: toc:2 num:t
+
+* Overview
+
+Notes from a conversation working through C++20 coroutines, starting from
+=co_yield=/generators, moving to =co_await=/awaitables, and ending on a
+real design question (ESP32 websocket "wait until connected"). Each
+section below is written around a specific point of confusion, since
+that's where the real understanding got built.
+
+* 1. Generators and =co_yield=
+
+A minimal generator:
+
+#+begin_src cpp
+template<typename T>
+struct Generator {
+    struct promise_type {
+        T current_value;
+        Generator get_return_object() {
+            return Generator{ std::coroutine_handle<promise_type>::from_promise(*this) };
+        }
+        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        std::suspend_always yield_value(T value) { current_value = value; return {}; }
+        void return_void() {}
+        void unhandled_exception() { std::terminate(); }
+    };
+    std::coroutine_handle<promise_type> handle;
+    explicit Generator(std::coroutine_handle<promise_type> h) : handle(h) {}
+    ~Generator() { if (handle) handle.destroy(); }
+    bool next() { handle.resume(); return !handle.done(); }
+    T value() const { return handle.promise().current_value; }
+};
+
+Generator<int> counter(int start, int end) {
+    for (int i = start; i <= end; ++i) co_yield i;
+}
+#+end_src
+
+** MISCONCEPTION: "How can =counter='s return type be =Generator<int>= if it yields an int?"
+
+*Confusion:* it looked like the yielded =int= should somehow "become" or
+match the declared return type =Generator<int>=.
+
+*Resolution:* these are two entirely separate channels:
+
+| Channel                | Carries                    | Mechanism                          |
+|-------------------------+-----------------------------+-------------------------------------|
+| Function return value   | =Generator<int>= (once)     | Ordinary return, via =get_return_object()= |
+| Yielded values          | =int= (many times)          | Stored in the promise, read via the handle |
+
+=co_yield i= never returns anything to the caller of =counter=. It desugars
+to =co_await promise.yield_value(i)=, which stores =i= inside the *promise
+object* (living in the coroutine frame). The "int" in =Generator<int>= is
+just a naming convention chosen by whoever wrote =Generator= — nothing
+enforces that it matches what =yield_value= accepts.
+
+** MISCONCEPTION: "Is the return type the only way the compiler finds the promise type?"
+
+*Resolution:* yes, essentially. The compiler looks up
+=std::coroutine_traits<ReturnType, ArgTypes...>::promise_type=, which by
+default just forwards to =ReturnType::promise_type=. This lookup happens
+*before* the compiler even looks at what's being yielded — return type
+first, then it validates the body against that promise's methods.
+=coroutine_traits= can be specialized to attach a promise to a type you
+don't own, but that's the rare/advanced escape hatch.
+
+* 2. =co_await= and awaitables
+
+Minimal awaitable interface:
+
+#+begin_src cpp
+struct Awaiter {
+    bool await_ready();
+    void await_suspend(std::coroutine_handle<> h);
+    T    await_resume();
+};
+#+end_src
+
+Example used throughout: =DelayedValue= (spawns a thread, sleeps, resumes)
+awaited from a coroutine returning a minimal =Task=.
+
+** MISCONCEPTION: "What handle gets passed to =await_suspend=? Is it the =Task= object?"
+
+*Confusion:* conflating the coroutine handle with the return-type object
+(=Task=).
+
+*Resolution:* they are unrelated objects:
+
+- The *handle* (=std::coroutine_handle<promise_type>=) points at the
+  calling coroutine's own hidden frame (here, =demo='s frame) — its
+  locals, resume point, and promise.
+- =Task= is just the value returned once from calling =demo()=, built by
+  =promise.get_return_object()=. In the minimal example =Task= is empty and
+  doesn't even store the handle, so it's disconnected from the frame
+  entirely.
+
+=await_suspend= only ever needs the handle to know "who to resume later" —
+it has no use for =Task=.
+
+** MISCONCEPTION: "Does =h.resume()= call the awaiter's =await_resume()=?"
+
+*Confusion:* assumed the coroutine handle machinery is what invokes
+=await_resume()= on resume.
+
+*Resolution:* No — =h.resume()= is "dumber" than that. It only jumps
+execution back into the suspended frame at the saved resume point.
+=await_resume()= is called because the *compiler-generated code inside the
+coroutine itself* — sitting immediately after the suspension point —
+happens to call it next. Full desugaring of =co_await awaiter=:
+
+#+begin_src cpp
+auto&& awaiter = /* the awaitable expression */;
+if (!awaiter.await_ready()) {
+    // suspend here (save resume point)
+    awaiter.await_suspend(handle);
+    // <-- execution pauses; resumes here later via some external h.resume()
+}
+int result = awaiter.await_resume();
+#+end_src
+
+Causal chain: =h.resume()= → jump into frame → next instruction (compiler
+placed it there) is =awaiter.await_resume()= → its return value becomes the
+result of the =co_await= expression.
+
+This also explains why the =awaiter= object must stay alive across the
+whole suspension: it lives inside the coroutine frame, not somewhere
+=h.resume()= reaches out to separately.
+
+** MISCONCEPTION: "Why do I even need the promise struct here? I don't use it explicitly."
+
+*Confusion:* in the minimal =Task=/=DelayedValue= example, the promise type
+seemed like unused ceremony — the awaiting mechanics never touch it.
+
+*Resolution:* correct that it's doing very little in that *specific* toy
+example — but the promise type is answering questions the compiler
+genuinely cannot answer on its own:
+
+1. What object does =demo()= return? (=get_return_object=)
+2. Start eagerly or lazily? (=initial_suspend=: =suspend_never= vs =suspend_always=)
+3. Suspend once more at the end, or clean up immediately? (=final_suspend=)
+4. What happens on =co_return= / an uncaught exception? (=return_value=/=return_void=, =unhandled_exception=)
+
+These stop being optional the moment the example needs to: return a
+value via =co_return=, let the caller retrieve that value later, or let
+one coroutine =co_await= another. The promise is the only object alive for
+the coroutine's *entire* lifetime that can hold a value produced at an
+arbitrary, compiler-chosen later point — =Task= itself is only touched
+once, at the very start.
+
+** MISCONCEPTION: "Does the nested =promise_type= mean =Task= has a promise member? Is =get_return_object= called as =Task(promise)=?"
+
+*Confusion:* nesting =struct promise_type= inside =Task= was assumed to
+imply =Task= *contains* a promise as a data member, and that construction
+looks like passing the promise into =Task='s constructor.
+
+*Resolution, both corrected:*
+
+- Nesting a type is not the same as having a member of that type
+  (same as =struct Outer { struct Inner {}; };= not giving =Outer= an
+  =Inner= member). The nested name is purely how
+  =coroutine_traits<Task>::promise_type= is located — a naming
+  requirement, not a layout requirement. The minimal =Task= in this
+  conversation has *zero* data members.
+- =get_return_object()= is a method *on the promise*, called on the
+  already-constructed promise living in the frame. Internally it may
+  construct a =Task=, typically passing a *handle* derived from =*this=
+  (via =coroutine_handle<promise_type>::from_promise(*this)=) — not the
+  promise object itself.
+
+** MISCONCEPTION: "So the same promise object lives in the frame and is stored in Task, so we can always access it?"
+
+*Near-correct — one precision needed:* =Task= stores a *handle*, not the
+promise object itself. Storing a copy of the promise would freeze a
+snapshot; the handle instead always resolves back to the one live
+promise object sitting in the coroutine frame, however much it changes
+afterward (e.g. a result written by a later =co_return=). Both the
+resumer (via the handle's frame-jump) and =Task= (via
+=handle.promise()=) are looking at the exact same object.
+
+* 3. Order of construction, precisely
+
+For =Task demo() { ... }= calling =demo()=:
+
+1. Coroutine frame allocated.
+2. Parameters copied into the frame.
+3. =promise_type= constructed in the frame.
+4. =get_return_object()= called immediately — the =Task= is built *now*,
+   but only stashed in a compiler-generated temporary, not yet visible
+   to the caller.
+5. =initial_suspend()= is =co_await=ed:
+   - =suspend_always= (Generator): suspends *before* the body runs; the
+     stashed =Task=/=Generator= is only handed to the caller at this
+     point.
+   - =suspend_never= (Task/DelayedValue example): falls straight through
+     into the body, so "returning to the caller" and "starting to run"
+     happen effectively at once.
+
+* 4. Applying it: waiting for a websocket connection
+
+Goal: don't send until a websocket is connected. Initial idea: an
+awaitable holding a =connected= bool, with =await_ready= reading it and
+=await_suspend= somehow "waiting" for it to be set by a websocket handler.
+
+** MISCONCEPTION: "await_suspend can just wait for the bool to be set"
+
+*Confusion:* imagined =await_suspend= actively "waiting" on the flag
+(implicitly, polling it).
+
+*Resolution:* a plain bool can't notify anything — polling defeats the
+purpose of suspension. The actual pattern: =await_suspend= *stores the
+coroutine handle* on the connection object; the real event
+callback (=on_connected()=) later calls =.resume()= on that stored handle
+when the event actually fires. The bool is only useful as a fast-path
+check in =await_ready= (already connected → skip suspension).
+
+** MISCONCEPTION: "Coroutines vs. callback-with-custom-object — pick one?"
+
+*Confusion:* treated the ESP32 client's native callback+context-object
+registration as a *competing* approach to using coroutines, and got
+stuck on "how do I get the handle into the callback."
+
+*Resolution:* they are not competitors — the callback *is* the mechanism
+that drives the coroutine. Nothing new needs inventing:
+
+- The "custom object recording connection status" the user already
+  wanted to pass to the ESP-IDF callback *is* the connection/state
+  object.
+- =await_suspend= doesn't hand the handle to the callback function
+  directly; it stores the handle *inside that same custom object*
+  (=user_arg=), where the callback already has access to it.
+- When =WEBSOCKET_EVENT_CONNECTED= fires, the callback reaches into the
+  object and calls =.resume()= on the stored handle — exactly the
+  "callback sets state" idea, just extended to also wake a suspended
+  coroutine.
+
+Practical caveats surfaced for the ESP32 case specifically:
+- ESP-IDF's event handler typically runs on its own internal task, so
+  =resume()= (and anything after the =co_await= in the coroutine) executes
+  in that context, not the originating task — may need to hand off via
+  a queue if the resumed code isn't safe there.
+- Race window between =await_ready()= returning false and
+  =await_suspend()= registering the handle: if the connected event fires
+  in between (on another task), the resume signal is lost. Needs a
+  critical section guarding the check-and-register as one atomic step.
+- A single =std::optional<coroutine_handle<>>= only supports one waiter;
+  multiple concurrent senders need a list of waiting handles instead.
+
+* 5. Summary of the throughline
+
+The recurring theme across the confusions above: coroutines split into
+two independent, easily-conflated tracks —
+
+- *Return type / promise* — describes what the caller receives and how
+  the coroutine reports results, exceptions, and start/end policy.
+- *Coroutine handle* — a raw "remote control" for resuming and
+  inspecting the frame, entirely blind to what =Task=/=Generator=/etc.
+  even is.
+
+Nearly every point of confusion above was, at root, attributing to one
+track something that actually belongs to the other.

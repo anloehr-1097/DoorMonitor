@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "esp_websocket_client.h"
 #include "portmacro.h"
+#include <coroutine>
 #include <memory>
 #include <string>
 #include <utility>
@@ -20,7 +21,7 @@ WebsocketClient::WebsocketClient(const char *uri) {
 void WebsocketClient::register_handler(ws_event_handler hdlr) {
   handler = hdlr;
   esp_websocket_register_events(client_handle.get(), WEBSOCKET_EVENT_ANY,
-                                handler, nullptr);
+                                handler, this);
 }
 
 void WebsocketClient::start() {
@@ -48,4 +49,49 @@ void WebsocketClient::send(const std::string &text) {
       ESP_LOGI(tag, "Sent %d bytes of data", sent);
     }
   }
+}
+
+// return type must be changed to coroutine Return type
+WebsocketClient::WaitTask WebsocketClient::send_co(const std::string &text) {
+  // connected = co_await WSConnectAwaitable{}
+  // the awaitable get the coroutine handle here via await_suspend, pass that
+  // handle to the callback registered WSConnectAwaitable.await_resume() is
+  // called here
+  auto sent = esp_websocket_client_send_text(client_handle.get(), text.c_str(),
+                                             text.length(), portMAX_DELAY);
+  if (sent < 0) {
+    ESP_LOGI(tag, "Websocket sent failed with error code %d", sent);
+  } else {
+    ESP_LOGI(tag, "Sent %d bytes of data", sent);
+  }
+}
+
+void WebsocketClient::on_connected() {
+  ws_is_connected = true;
+  if (waiting_coro) {
+    auto h = *waiting_coro;
+    waiting_coro.reset();
+    h.resume();
+  }
+}
+
+struct WebsocketClient::WaitTask {
+  struct promise_type {
+    WebsocketClient::WaitTask get_return_object() { return {}; }
+    std::suspend_never initial_suspend() noexcept { return {}; }
+    std::suspend_never final_suspend() noexcept { return {}; }
+    void return_void() {}
+    void unhandled_exception() { std::terminate(); }
+  };
+};
+
+struct WebsocketClient::ConnectAwaiter {
+  WebsocketClient &client;
+  bool await_ready() const noexcept { return client.ws_is_connected; }
+  void await_suspend(std::coroutine_handle<> h) { client.waiting_coro = h; }
+  void await_resume() const noexcept {}
+};
+
+WebsocketClient::ConnectAwaiter WebsocketClient::wait_connected() {
+  return WebsocketClient::ConnectAwaiter(*this);
 }

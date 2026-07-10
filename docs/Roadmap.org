@@ -10,3 +10,18 @@ make the sensor reading times more predictable by using vTaskDelayUntil instead 
 - understand timings, components of the protocol and audio module
 
 
+
+
+
+
+* Coroutines for websocket client logic
+- need custom allocator to allocate from static memory region
+- coroutines for connect -> send logic
+
+
+** Coroutines
+
+  
+
+
+

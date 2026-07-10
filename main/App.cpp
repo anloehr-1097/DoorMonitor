@@ -121,14 +121,18 @@ extern "C" void app_main(void) {
     esp_restart();
   }
 
-  auto ws_client{WebsocketClient("ws://192.168.178.55")};
+  WebsocketClient ws_client{"ws://192.168.178.55"};
   ws_client.register_handler([](void *handler_args, esp_event_base_t ev_base,
                                 int32_t event_id, void *event_data) {
     esp_websocket_event_data_t *data =
         static_cast<esp_websocket_event_data_t *>(event_data);
+
+    auto *conn = static_cast<WebsocketClient *>(handler_args);
+
     switch (event_id) {
     case WEBSOCKET_EVENT_CONNECTED:
       ESP_LOGI("WS Handler", "WEBSOCKET_EVENT_CONNECTED");
+      conn->on_connected();
       break;
     case WEBSOCKET_EVENT_DISCONNECTED:
       ESP_LOGI("WS Handler", "WEBSOCKET_EVENT_DISCONNECTED");
@@ -149,7 +153,7 @@ extern "C" void app_main(void) {
     }
   });
 
-  auto WsParser{GenericWSParser<const char *>()};
+  GenericWSParser<const char *> WsParser;
   ws_client.start();
   auto parsed_v = WsParser.parse("Parsed value").value();
 
