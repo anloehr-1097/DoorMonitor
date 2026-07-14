@@ -9,11 +9,20 @@
 #include <optional>
 #include <string>
 
+struct WaitTask {
+  struct promise_type {
+    WaitTask get_return_object() { return {}; }
+    std::suspend_never initial_suspend() noexcept { return {}; }
+    std::suspend_never final_suspend() noexcept { return {}; }
+    void return_void() {}
+    void unhandled_exception() { std::terminate(); }
+  };
+};
+
 class WebsocketClient {
 
   struct ConnectAwaiter;
 
-  struct WaitTask;
   static constexpr char *tag = "WebsocketClient";
   using ws_event_handler = void (*)(void *, esp_event_base_t, int32_t, void *);
 
@@ -35,7 +44,7 @@ public:
   void register_handler(ws_event_handler);
   void start();
   void send(const std::string &);
-  void send_co(const std::string &);
+  WaitTask send_co(const std::string &);
   bool connected();
   void on_connected();
   ConnectAwaiter wait_connected();

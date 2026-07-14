@@ -1,0 +1,61 @@
+
+
+
+
+coroutines are another mechanism to indicate to one "component" of the code depending on another component that it may resume
+
+
+alternatives to using coroutines:
+- polling
+- ?threads with barrier? 
+- 
+
+
+
+
+components of the co_await feature
+- Coroutine Return Type
+  -- Promise type
+- Awaitable
+- coroutine
+
+
+
+What makes a coroutine?
+-> any of the keywords co_await, co_yield, co_return
+
+
+Awaitable Interface
+TODO
+
+
+CoroutineReturnType Interface
+TODO
+
+
+Coroutine signature? 
+
+#+begin_src c++
+
+  // definition of Awaitable
+  // definition of CoroutineReturnType
+
+
+  CoroutineReturnType coroutine_name(Params){
+    // ...
+    co_await Awaitable{args}
+  };
+
+#+end_src
+
+What happens on calling co_await /Awaitable/ in the above? 
+- a new instance of the promise type defined in the CoroutineReturnType is constructed
+- jump into Awaitable, call await_ready(), if resolves to true, call await_resume and after that  continue to the first statement after the co_await
+- else if not true, call await_suspend(handle) with handle wrapping the newly instantiated promise and the coroutines local state, the resume point, etc?
+  This is where the magic happens
+  
+- the CoroutineReturnType object returned from the Coroutine is instantiated by the promise type implicitly constructed in the coroutine body via the ~get_return_object~ call
+-  
+
+
+

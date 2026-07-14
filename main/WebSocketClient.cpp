@@ -51,10 +51,21 @@ void WebsocketClient::send(const std::string &text) {
   }
 }
 
+struct WebsocketClient::ConnectAwaiter {
+  WebsocketClient &client;
+  bool await_ready() const noexcept { return client.ws_is_connected; }
+  void await_suspend(std::coroutine_handle<> h) { client.waiting_coro = h; }
+  void await_resume() const noexcept {}
+};
+
+WebsocketClient::ConnectAwaiter WebsocketClient::wait_connected() {
+  return WebsocketClient::ConnectAwaiter(*this);
+}
+
 // return type must be changed to coroutine Return type
-WebsocketClient::WaitTask WebsocketClient::send_co(const std::string &text) {
-  // connected = co_await WSConnectAwaitable{}
+WaitTask WebsocketClient::send_co(const std::string &text) {
   // the awaitable get the coroutine handle here via await_suspend, pass that
+  co_await wait_connected();
   // handle to the callback registered WSConnectAwaitable.await_resume() is
   // called here
   auto sent = esp_websocket_client_send_text(client_handle.get(), text.c_str(),
@@ -73,25 +84,4 @@ void WebsocketClient::on_connected() {
     waiting_coro.reset();
     h.resume();
   }
-}
-
-struct WebsocketClient::WaitTask {
-  struct promise_type {
-    WebsocketClient::WaitTask get_return_object() { return {}; }
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_never final_suspend() noexcept { return {}; }
-    void return_void() {}
-    void unhandled_exception() { std::terminate(); }
-  };
-};
-
-struct WebsocketClient::ConnectAwaiter {
-  WebsocketClient &client;
-  bool await_ready() const noexcept { return client.ws_is_connected; }
-  void await_suspend(std::coroutine_handle<> h) { client.waiting_coro = h; }
-  void await_resume() const noexcept {}
-};
-
-WebsocketClient::ConnectAwaiter WebsocketClient::wait_connected() {
-  return WebsocketClient::ConnectAwaiter(*this);
 }

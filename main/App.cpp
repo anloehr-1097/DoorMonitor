@@ -156,9 +156,7 @@ extern "C" void app_main(void) {
   GenericWSParser<const char *> WsParser;
   ws_client.start();
   auto parsed_v = WsParser.parse("Parsed value").value();
-
-  // TODO(al) need to wait for the socket to be connected
-  ws_client.send(parsed_v);
+  ws_client.send_co(parsed_v);
 
   while (1) {
     vTaskDelay(100 / portTICK_PERIOD_MS);
