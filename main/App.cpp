@@ -68,37 +68,6 @@ extern "C" void app_main(void) {
   printf("Minimum free heap size: %" PRIu32 " bytes\n",
          esp_get_minimum_free_heap_size());
 
-  if constexpr (reed_gpio_process) {
-    static SharedRingCtxt<int, 100> reed_shared_ring_ctxt{};
-    static SharedRingCtxt<int, 100> infrared_shared_ring_ctxt{};
-
-    GPIOTask reed_task(GPIO_NUM_39, reed_shared_ring_ctxt);
-    reed_task.register_task("reed_task", 2048, 5);
-
-    GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
-    infrared_task.register_task("infrared_task", 2048, 5);
-
-    IsEqualToZeroEvaluator<int> is_zero_evaluator;
-    SignalProcessor signal_processor(reed_shared_ring_ctxt,
-                                     infrared_shared_ring_ctxt,
-                                     is_zero_evaluator, is_zero_evaluator);
-
-    signal_processor.register_task("signal_processor", 4096, 10);
-  }
-
-  if constexpr (noise_detect) {
-    NoiseDetectionTask noise_detection_task;
-    NoiseDetectionI2SConfig noise_config = {
-        .sample_rate = 16000, // 16kHz sampling rate
-        .SD_pin = GPIO_NUM_16,
-        .BCKL_pin = GPIO_NUM_17,
-        .WS_pin = GPIO_NUM_18,
-        .bits_per_sample = I2S_DATA_BIT_WIDTH_32BIT,
-    };
-    noise_detection_task.setup(noise_config, I2S_NUM_0);
-    noise_detection_task.register_task("noise_detection_task", 4096, 10);
-  }
-
   esp_err_t nvs_ret = nvs_flash_init();
   if (nvs_ret == ESP_ERR_NVS_NO_FREE_PAGES ||
       nvs_ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -157,6 +126,37 @@ extern "C" void app_main(void) {
   ws_client.start();
   auto parsed_v = WsParser.parse("Parsed value").value();
   ws_client.send_co(parsed_v);
+
+  if constexpr (reed_gpio_process) {
+    static SharedRingCtxt<int, 100> reed_shared_ring_ctxt{};
+    static SharedRingCtxt<int, 100> infrared_shared_ring_ctxt{};
+
+    GPIOTask reed_task(GPIO_NUM_39, reed_shared_ring_ctxt);
+    reed_task.register_task("reed_task", 2048, 5);
+
+    GPIOTask infrared_task(GPIO_NUM_21, infrared_shared_ring_ctxt);
+    infrared_task.register_task("infrared_task", 2048, 5);
+
+    IsEqualToZeroEvaluator<int> is_zero_evaluator;
+    SignalProcessor signal_processor(reed_shared_ring_ctxt,
+                                     infrared_shared_ring_ctxt,
+                                     is_zero_evaluator, is_zero_evaluator);
+
+    signal_processor.register_task("signal_processor", 4096, 10);
+  }
+
+  if constexpr (noise_detect) {
+    NoiseDetectionTask noise_detection_task;
+    NoiseDetectionI2SConfig noise_config = {
+        .sample_rate = 16000, // 16kHz sampling rate
+        .SD_pin = GPIO_NUM_16,
+        .BCKL_pin = GPIO_NUM_17,
+        .WS_pin = GPIO_NUM_18,
+        .bits_per_sample = I2S_DATA_BIT_WIDTH_32BIT,
+    };
+    noise_detection_task.setup(noise_config, I2S_NUM_0);
+    noise_detection_task.register_task("noise_detection_task", 4096, 10);
+  }
 
   while (1) {
     vTaskDelay(100 / portTICK_PERIOD_MS);

@@ -64,3 +64,11 @@ void NoiseDetectionTask::task() {
     vTaskDelay(pdMS_TO_TICKS(200));
   }
 }
+
+void NoiseDetectionTask::addWsHandle(std::shared_ptr<WebsocketClient> client) {
+  ws = client;
+  /* TODO(al)
+   * Create an array of function objects for actions that operate on the sensor
+   * readings, one of them being the 'send ws action'
+   */
+}
